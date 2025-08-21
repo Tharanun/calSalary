@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>โปรแกรมคำนวณเงินเดือน</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body { font-family: "Segoe UI", Tahoma, sans-serif; padding: 30px; background: #f3f4f6; color: #111827; }
+    h1 { text-align: center; margin-bottom: 20px; }
+    .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 1000px; margin: auto; }
+    label { display: block; margin: 10px 0 5px; font-weight: bold; }
+    input { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%; }
+    button { padding: 8px 14px; border: none; border-radius: 8px; margin: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+    button.save { background: #2563eb; color: #fff; } button.save:hover { background: #1d4ed8; }
+    button.clear { background: #f59e0b; color: #fff; } button.clear:hover { background: #d97706; }
+    button.delete { background: #f87171; color: #fff; } button.delete:hover { background: #dc2626; }
+    button.edit { background: #60a5fa; color: #fff; } button.edit:hover { background: #2563eb; }
+
+    /* ปุ่มถอนเงิน */
+    .btn-withdraw { background: #10b981; color: white; font-weight: bold; }
+    .btn-withdraw:hover { background: #059669; transform: scale(1.05); }
+
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; border-radius: 12px; overflow: hidden; }
+    th,td { border: 1px solid #e5e7eb; padding: 8px; text-align: center; }
+    th { background: #f9fafb; }
+
+    /* Dashboard Styling */
+    .summary { margin-top: 30px; }
+    .summary-cards { display: flex; gap: 20px; justify-content: space-between; flex-wrap: wrap; }
+    .summary-card {
+      flex: 1; min-width: 250px;
+      background: #f9fafb; border-radius: 12px; padding: 20px; text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .summary-card h3 { margin: 8px 0; }
+    .salary { color: #2563eb; }
+    .bonus { color: #16a34a; }
+    .ot { color: #f59e0b; }
+    .total-box {
+      margin-top: 20px; padding: 20px; background: #f1f5f9;
+      border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .highlight { font-size: 20px; font-weight: bold; color: #dc2626; }
+    ul { margin-top: 10px; padding-left: 20px; }
+  </style>
+</head>
+<body>
+  <h1>📊 โปรแกรมคำนวณเงินเดือน</h1>
+  <div class="card">
+    <label>เงินเดือนพื้นฐาน (บาท/เดือน):</label>
+    <input type="number" id="baseSalary" value="20000">
+
+    <label>วันที่:</label>
+    <input type="date" id="date">
+
+    <label>OT (ชั่วโมง):</label>
+    <input type="number" id="ot" value="0">
+
+    <label>อัตราค่า OT (บาท/ชั่วโมง):</label>
+    <input type="number" id="otRate" value="125">
+
+    <label>โบนัส (บาท):</label>
+    <input type="number" id="bonus" value="110">
+
+    <div>
+      <button class="save" onclick="saveData()">💾 บันทึก</button>
+      <button class="clear" onclick="clearData()">🗑️ ลบข้อมูลทั้งหมด</button>
+    </div>
+
+    <table id="recordTable">
+      <thead>
+        <tr>
+          <th>วันที่</th><th>OT (ชม.)</th><th>อัตรา OT</th><th>โบนัส</th><th>รายได้เพิ่ม (บาท)</th><th>จัดการ</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="summary">
+      <div class="summary-cards">
+        <div class="summary-card salary">
+          <h3>💵 เงินเดือนประจำ</h3>
+          <p><span id="salary">20000.00</span> บาท</p>
+          <button class="btn-withdraw" onclick="withdraw('salary')">ถอนเงินเดือน</button>
+        </div>
+        <div class="summary-card bonus">
+          <h3>🎁 โบนัสสะสม</h3>
+          <p><span id="bonusTotal">0.00</span> บาท</p>
+          <button class="btn-withdraw" onclick="withdraw('bonus')">ถอนโบนัส</button>
+        </div>
+        <div class="summary-card ot">
+          <h3>⏱️ OT สะสม</h3>
+          <p><span id="otTotal">0.00</span> บาท</p>
+          <button class="btn-withdraw" onclick="withdraw('ot')">ถอน OT</button>
+        </div>
+      </div>
+
+      <div class="total-box">
+        <h3>✅ รายได้ถอนแล้ว: <span id="withdrawn">0.00</span> บาท</h3>
+        <h3 class="highlight">💰 รวมสุทธิ: <span id="finalTotal">0.00</span> บาท</h3>
+        <button class="clear" onclick="resetWithdraw()">🔄 รีเซ็ต</button>
+        <h3 style="margin-top:15px;">📜 ประวัติการถอน:</h3>
+        <ul id="withdrawLog"></ul>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let editIndex=null;
+  function getData(){return JSON.parse(localStorage.getItem("salaryData"))||[];}
+  function setData(d){localStorage.setItem("salaryData",JSON.stringify(d));}
+  let withdrawData=JSON.parse(localStorage.getItem("withdrawData"))||{salary:0,bonus:0,ot:0,log:[]};
+
+  function saveData(){
+    const date=document.getElementById("date").value;
+    const ot=parseFloat(document.getElementById("ot").value)||0;
+    const otRate=parseFloat(document.getElementById("otRate").value)||0;
+    const bonus=parseFloat(document.getElementById("bonus").value)||0;
+    if(!date){Swal.fire("กรุณาเลือกวันที่","","warning");return;}
+    const income=(ot*otRate)+bonus;
+    let data=getData();
+    if(editIndex!==null){ data[editIndex]={date,ot,otRate,bonus,income}; editIndex=null; }
+    else{ data.push({date,ot,otRate,bonus,income}); }
+    setData(data);
+    Swal.fire("บันทึกสำเร็จ","","success");
+    renderTable();
+    document.getElementById("date").value="";document.getElementById("ot").value=0;document.getElementById("bonus").value=110;
+  }
+
+  function deleteItem(i){
+    let d=getData(); d.splice(i,1); setData(d);
+    Swal.fire("ลบสำเร็จ","","success"); renderTable();
+  }
+
+  function editItem(i){
+    let d=getData()[i];
+    document.getElementById("date").value=d.date;
+    document.getElementById("ot").value=d.ot;
+    document.getElementById("otRate").value=d.otRate;
+    document.getElementById("bonus").value=d.bonus;
+    editIndex=i;
+  }
+
+  function clearData(){
+    if(confirm("ลบข้อมูลทั้งหมด?")){ localStorage.removeItem("salaryData"); renderTable(); }
+  }
+
+  function resetWithdraw(){
+    withdrawData={salary:0,bonus:0,ot:0,log:[]};
+    localStorage.setItem("withdrawData",JSON.stringify(withdrawData));
+    Swal.fire("รีเซ็ตสำเร็จ","","success");
+    renderTable();
+  }
+
+  function withdraw(type){
+    const baseSalary=parseFloat(document.getElementById("baseSalary").value)||0;
+    const data=getData(); let otSum=0,bonusSum=0;
+    data.forEach(i=>{ otSum+=i.ot*i.otRate; bonusSum+=i.bonus; });
+
+    if(type==="salary"){
+      if(withdrawData.salary>0){Swal.fire("เงินเดือนถูกถอนแล้ว","","info");return;}
+      withdrawData.salary=baseSalary;
+      withdrawData.log.push(`ถอนเงินเดือน: ${baseSalary} บาท`);
+      Swal.fire("ถอนเงินเดือนสำเร็จ",`จำนวน ${baseSalary} บาท`,"success");
+    }
+    else if(type==="bonus"){
+      if(bonusSum<=0){Swal.fire("ไม่มีโบนัสให้ถอน","","info");return;}
+      withdrawData.bonus+=bonusSum;
+      withdrawData.log.push(`ถอนโบนัส: ${bonusSum} บาท`);
+      let remain=data.map(i=>({...i,bonus:0,income:(i.ot*i.otRate)})); // โบนัสหาย OT อยู่
+      setData(remain);
+      Swal.fire("ถอนโบนัสสำเร็จ",`จำนวน ${bonusSum} บาท`,"success");
+    }
+    else if(type==="ot"){
+      if(otSum<=0){Swal.fire("ไม่มี OT ให้ถอน","","info");return;}
+      withdrawData.ot+=otSum;
+      withdrawData.log.push(`ถอน OT: ${otSum} บาท`);
+      // OT ชั่วโมงยังอยู่ แต่รายได้เพิ่มลดเหลือแค่โบนัส
+      let remain=data.map(i=>({...i,income:(i.bonus)}));
+      setData(remain);
+      Swal.fire("ถอน OT สำเร็จ",`จำนวน ${otSum} บาท`,"success");
+    }
+
+    localStorage.setItem("withdrawData",JSON.stringify(withdrawData));
+    renderTable();
+  }
+
+  function renderTable(){
+    const data=getData(); const tbody=document.querySelector("#recordTable tbody"); tbody.innerHTML="";
+    let otSum=0,bonusSum=0;
+    data.forEach((i,idx)=>{
+      tbody.innerHTML+=`
+        <tr>
+          <td>${i.date}</td><td>${i.ot}</td><td>${i.otRate}</td><td>${i.bonus}</td><td>${i.income.toFixed(2)}</td>
+          <td><button class="edit" onclick="editItem(${idx})">แก้ไข</button>
+              <button class="delete" onclick="deleteItem(${idx})">ลบ</button></td>
+        </tr>`;
+      otSum+=i.ot*i.otRate; bonusSum+=i.bonus;
+    });
+    document.getElementById("salary").innerText=(parseFloat(document.getElementById("baseSalary").value)||0).toFixed(2);
+    document.getElementById("otTotal").innerText=otSum.toFixed(2);
+    document.getElementById("bonusTotal").innerText=bonusSum.toFixed(2);
+    const withdrawn=(withdrawData.salary||0)+(withdrawData.bonus||0)+(withdrawData.ot||0);
+    document.getElementById("withdrawn").innerText=withdrawn.toFixed(2);
+    document.getElementById("finalTotal").innerText=withdrawn.toFixed(2);
+    const logEl=document.getElementById("withdrawLog"); logEl.innerHTML="";
+    withdrawData.log.forEach(l=>{ logEl.innerHTML+=`<li>${l}</li>`; });
+  }
+
+  document.getElementById("baseSalary").addEventListener("input",renderTable);
+  renderTable();
+</script>
+</body>
+</html>
