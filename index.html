@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <title>โปรแกรมคำนวณเงินเดือน</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="p-6 bg-base-200 text-base-content">
+    <div class="max-w-5xl mx-auto card bg-base-100 shadow-xl p-6">
+      <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold">📊 โปรแกรมคำนวณเงินเดือน</h1>
+        <label class="swap swap-rotate">
+          <input type="checkbox" id="themeToggle" />
+          <svg
+            class="swap-on fill-current w-8 h-8"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M5.64 17.657l1.414 1.415L12 14.828l4.95 4.95 1.415-1.415L13.415 13.414l4.95-4.95-1.415-1.414L12 10.586 7.05 5.636 5.636 7.05 10.586 12l-4.95 4.95z"
+            />
+          </svg>
+          <svg
+            class="swap-off fill-current w-8 h-8"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 3a9 9 0 0 0 0 18 9 9 0 1 1 0-18z" />
+          </svg>
+        </label>
+      </div>
+
+      <!-- Input Form -->
+      <!-- Input Form -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <!-- เงินเดือน -->
+        <div class="card bg-base-200 shadow p-4">
+          <label class="font-semibold">💵 เงินเดือนพื้นฐาน</label>
+          <input
+            type="number"
+            id="baseSalary"
+            value="20000"
+            class="input input-bordered w-full mt-2"
+          />
+        </div>
+
+        <!-- วันที่ -->
+        <div class="card bg-base-200 shadow p-4">
+          <label class="font-semibold">📅 วันที่</label>
+          <input
+            type="date"
+            id="date"
+            class="input input-bordered w-full mt-2"
+          />
+        </div>
+
+        <!-- อัตรา OT -->
+        <div class="card bg-base-200 shadow p-4">
+          <label class="font-semibold">💲 อัตราค่า OT</label>
+          <input
+            type="number"
+            id="otRate"
+            value="125"
+            class="input input-bordered w-full mt-2"
+          />
+        </div>
+
+        <!-- OT ชั่วโมง -->
+        <div class="card bg-base-200 shadow p-4">
+          <label class="font-semibold">⏱️ OT (ชม.)</label>
+          <select id="ot" class="select select-bordered w-full mt-2">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+          </select>
+        </div>
+
+        <!-- โบนัส -->
+        <div class="card bg-base-200 shadow p-4">
+          <label class="font-semibold">🎁 โบนัส (บาท)</label>
+          <input
+            type="number"
+            id="bonus"
+            value="110"
+            class="input input-bordered w-full mt-2"
+          />
+        </div>
+      </div>
+
+      <div class="mt-4 flex gap-2">
+        <button class="btn btn-primary" onclick="saveData()">💾 บันทึก</button>
+        <button class="btn btn-warning" onclick="clearData()">
+          🗑️ ลบข้อมูลทั้งหมด
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto mt-6">
+        <table class="table table-zebra w-full">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>OT (ชม.)</th>
+              <th>อัตรา OT</th>
+              <th>โบนัส</th>
+              <th>รายได้เพิ่ม</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="recordTable"></tbody>
+        </table>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="grid md:grid-cols-3 gap-4 mt-6">
+        <div class="stat bg-blue-100 rounded-xl p-4">
+          <div class="stat-title">💵 เงินเดือนประจำ</div>
+          <div class="stat-value text-blue-600" id="salary">0</div>
+        </div>
+        <div class="stat bg-green-100 rounded-xl p-4">
+          <div class="stat-title">🎁 โบนัสสะสม</div>
+          <div class="stat-value text-green-600" id="bonusTotal">0</div>
+        </div>
+        <div class="stat bg-yellow-100 rounded-xl p-4">
+          <div class="stat-title">⏱️ OT สะสม</div>
+          <div class="stat-value text-yellow-600" id="otTotal">0</div>
+        </div>
+      </div>
+
+      <!-- Withdraw -->
+      <div class="mt-6">
+        <button class="btn btn-success w-full" onclick="withdrawMenu()">
+          💰 ถอนรายได้
+        </button>
+      </div>
+
+      <!-- Final -->
+      <div class="bg-base-200 p-4 rounded-xl mt-6">
+        <h3 class="text-lg font-bold">
+          💰 ถอนแล้ว: <span id="withdrawn">0</span> บาท
+        </h3>
+        <!-- <h3 class="text-xl font-bold text-red-600">
+          ✅💰 รวมสุทธิ: <span id="finalTotal">0</span> บาท
+        </h3> -->
+        <button class="btn btn-error mt-2" onclick="resetWithdraw()">
+          🔄 รีเซ็ตการถอน
+        </button>
+        <h4 class="mt-4 font-semibold">📜 ประวัติการถอน:</h4>
+        <ul id="withdrawLog" class="list-disc pl-5"></ul>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

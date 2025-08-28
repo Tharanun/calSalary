@@ -1,0 +1,12 @@
+/* ปรับแต่งเพิ่มเติม */
+body {
+  transition: background 0.3s, color 0.3s;
+}
+.card label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.stat {
+  text-align: center;
+}
